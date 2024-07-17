@@ -7,6 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* Keeping the same styles as in index.html */
         body {
             font-family: 'Roboto', sans-serif;
             display: flex;
@@ -100,6 +101,7 @@
             padding-top: 10px;
             margin-top: 15px;
         }
+        /* New styles for registration page */
         #guestSelect {
             font-size: 1.2em;
             padding: 10px;
@@ -133,8 +135,8 @@
         let ndef;
 
         // Replace these with your actual API endpoints
-        const GUESTLIST_API_URL = 'https://example.com/api/guestlist';
-        const REGISTRATION_API_URL = 'https://example.com/api/registration';
+        const GUESTLIST_API_URL = 'https://sheetdb.io/api/v1/hmrvpjmef5not';
+        const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
 
         function updateStatus(message) {
             statusElement.textContent = message;
@@ -191,6 +193,7 @@
                 const option = document.createElement('option');
                 option.value = guest.name;
                 option.textContent = guest.name;
+                // Check if registered is strictly equal to true or the string "TRUE"
                 option.disabled = guest.registered === true || guest.registered === "TRUE";
                 guestSelect.appendChild(option);
             });
@@ -217,21 +220,14 @@
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Error registering guest");
+                    throw new Error("Error registering guest");
                 }
 
-                const result = await response.json();
-
-                if (result.error) {
-                    showPopup(`Error: ${result.error}`, 'error');
-                } else {
-                    showPopup(`Successfully registered ${name} with UID: ${uid}`);
-                    guestSelect.value = '';
-                    scanInstructions.style.display = 'none';
-                    updateStatus('Select a guest and scan their RFID tag to register.');
-                    await fetchGuestList(); // Refresh the guest list
-                }
+                showPopup(`Successfully registered ${name} with UID: ${uid}`);
+                guestSelect.value = '';
+                scanInstructions.style.display = 'none';
+                updateStatus('Select a guest and scan their RFID tag to register.');
+                await fetchGuestList(); // Refresh the guest list
             } catch (error) {
                 showPopup(`Error: ${error.message}`, 'error');
             }
