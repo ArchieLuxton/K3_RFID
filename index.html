@@ -6,13 +6,20 @@
     <title>RFID Tag Reader</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        /* Your existing styles here */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #log {
+            margin-top: 20px;
+            font-size: 18px;
+        }
     </style>
 </head>
 <body>
     <h1>RFID Tag Reader</h1>
-    <button id="scanButton">Scan RFID Tag</button>
-    <div id="log"></div>
+    <div id="log">Waiting for NFC tag...</div>
 
     <script>
         // Register service worker
@@ -24,38 +31,34 @@
             });
         }
 
-        const tagCounts = {};
         const logElement = document.getElementById('log');
-        const scanButton = document.getElementById('scanButton');
 
-        function scanTag() {
-            if ('nfc' in navigator) {
-                navigator.nfc.watch((message) => {
-                    const uuid = message.records[0].data;
-                    if (uuid in tagCounts) {
-                        tagCounts[uuid]++;
-                    } else {
-                        tagCounts[uuid] = 1;
+        function startNFCScanning() {
+            if ('NDEFReader' in window) {
+                const ndefReader = new NDEFReader();
+                ndefReader.scan().then(() => {
+                    console.log("Scan started successfully");
+                    ndefReader.onreading = event => {
+                        const decoder = new TextDecoder();
+                        for (const record of event.message.records) {
+                            if (record.recordType === "text") {
+                                const uuid = decoder.decode(record.data);
+                                logElement.textContent = `UUID: ${uuid}`;
+                            }
+                        }
                     }
-                    updateLog();
-                }, { mode: 'any' }).catch((error) => {
-                    console.error("Error watching for NFC tags:", error);
+                }).catch(error => {
+                    console.log("Error starting NFC scan:", error);
+                    logElement.textContent = "Error: Unable to start NFC scanning";
                 });
             } else {
-                alert("NFC is not supported on this device or browser.");
+                console.log("Web NFC is not supported in this browser");
+                logElement.textContent = "Error: NFC is not supported on this device or browser";
             }
         }
 
-        function updateLog() {
-            logElement.innerHTML = '';
-            for (const [uuid, count] of Object.entries(tagCounts)) {
-                const logItem = document.createElement('p');
-                logItem.textContent = `UUID: ${uuid} - Count: ${count}`;
-                logElement.appendChild(logItem);
-            }
-        }
-
-        scanButton.addEventListener('click', scanTag);
+        // Start NFC scanning when the page loads
+        document.addEventListener('DOMContentLoaded', startNFCScanning);
     </script>
 </body>
 </html>
