@@ -67,7 +67,8 @@
         const readButton = document.getElementById('readButton');
         let ndef;
 
-        const SHEETDB_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh'; // Your SheetDB URL
+        const DRINKS_API_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh';
+        const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
 
         const scanSound = new Audio('scan_sound.mp3');
         const uploadSound = new Audio('upload_sound.mp3');
@@ -84,22 +85,34 @@
             setTimeout(() => errorPopup.remove(), 5000);
         }
 
+        async function getNameFromUid(uid) {
+            try {
+                const response = await fetch(REGISTRATION_API_URL);
+                if (!response.ok) {
+                    throw new Error("Error fetching registration data from SheetsDB");
+                }
+                const registrationData = await response.json();
+                const entry = registrationData.find(entry => entry.uid === uid);
+                return entry ? entry.name : null;
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+                return null;
+            }
+        }
+
         async function incrementOrAddUid(uid) {
             try {
-                // Fetch existing data
-                const response = await fetch(SHEETDB_URL);
+                const response = await fetch(DRINKS_API_URL);
                 if (!response.ok) {
-                    throw new Error('Error fetching data from SheetDB');
+                    throw new Error("Error fetching data from SheetsDB");
                 }
                 const data = await response.json();
 
-                // Check if UID exists
                 const existingEntry = data.find(entry => entry.uid === uid);
 
                 if (existingEntry) {
-                    // Increment existing UID
                     const newCount = parseInt(existingEntry.num_drinks) + 1;
-                    const updateResponse = await fetch(`${SHEETDB_URL}/uid/${uid}`, {
+                    const updateResponse = await fetch(`${DRINKS_API_URL}/uid/${uid}`, {
                         method: 'PATCH',
                         headers: {
                             'Accept': 'application/json',
@@ -109,15 +122,19 @@
                     });
 
                     if (updateResponse.ok) {
-                        console.log(`UID ${uid} incremented successfully`);
+                        const name = await getNameFromUid(uid);
+                        if (name) {
+                            resultElement.textContent = `Thanks ${name}! You have just bought 1 drink. Total drinks so far: ${newCount}`;
+                        } else {
+                            resultElement.textContent = `UID ${uid} incremented successfully. You have just bought 1 drink. Total drinks: ${newCount}`;
+                        }
                         return newCount;
                     } else {
                         throw new Error(`Error updating UID ${uid}`);
                     }
                 } else {
-                    // Add new UID
                     const newEntry = { uid: uid, num_drinks: 1 };
-                    const addResponse = await fetch(SHEETDB_URL, {
+                    const addResponse = await fetch(DRINKS_API_URL, {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -127,7 +144,12 @@
                     });
 
                     if (addResponse.ok) {
-                        console.log(`UID ${uid} added successfully`);
+                        const name = await getNameFromUid(uid);
+                        if (name) {
+                            resultElement.textContent = `Thanks ${name}! You have just bought 1 drink.`;
+                        } else {
+                            resultElement.textContent = `UID ${uid} added successfully. You have just bought 1 drink. Total drinks: 1`;
+                        }
                         return 1;
                     } else {
                         throw new Error(`Error adding UID ${uid}`);
@@ -148,14 +170,11 @@
 
             const totalDrinks = await incrementOrAddUid(uid);
             if (totalDrinks !== null) {
-                resultElement.textContent = `Thanks ${uid}! You have bought a total of ${totalDrinks} drinks.`;
                 try {
                     await uploadSound.play();
                 } catch (error) {
                     showError(`Error playing upload sound: ${error.message}`);
                 }
-            } else {
-                resultElement.textContent = `Error processing UID ${uid}`;
             }
         }
 
