@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>K3 Drink Scanner</title>
     <link rel="manifest" href="manifest.json">
-    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
@@ -14,26 +14,28 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #1a1a1a;
-            color: #ffffff;
+            background-color: #f0f0f0;
+            color: #333333;
         }
         #app {
             text-align: center;
-            background-color: #2a2a2a;
+            background-color: #ffffff;
             padding: 40px;
             border-radius: 15px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             max-width: 800px;
             width: 90%;
         }
         h1 {
-            font-size: 3em;
+            font-size: 2.5em;
             margin-bottom: 10px;
-            color: #ff6b6b;
+            color: #333333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         h2 {
-            font-family: 'Creepster', cursive;
-            font-size: 2em;
+            font-size: 1.5em;
             margin-top: 0;
             margin-bottom: 30px;
             color: #4ecdc4;
@@ -41,14 +43,14 @@
         #status {
             font-size: 1.2em;
             margin-bottom: 20px;
-            color: #f7fff7;
+            color: #333333;
         }
         #result {
             font-size: 1.5em;
             margin-top: 30px;
             padding: 20px;
             background-color: #4ecdc4;
-            color: #1a1a1a;
+            color: #ffffff;
             border-radius: 10px;
             display: none;
         }
@@ -91,8 +93,8 @@
     <div id="app">
         <h1>Welcome to K3!</h1>
         <h2>Work | Sin | Party</h2>
-        <p id="status">To buy a drink, please scan your tag.</p>
-        <p>Every drink is €2:</p>
+        <p id="status">Ready to scan! Place your tag on the back of the phone to buy a drink.</p>
+        <p>Every drink is £2:</p>
         <table class="drink-table">
             <tr>
                 <th>Drink</th>
@@ -102,32 +104,32 @@
             <tr>
                 <td>Beer</td>
                 <td>1 pint</td>
-                <td>€2</td>
+                <td>£2</td>
             </tr>
             <tr>
-                <td>Tinto de Verano (Red wine + lemonade)</td>
+                <td>Tinto de Verano<br><small>(Red wine + lemonade)</small></td>
                 <td>1/2 pint</td>
-                <td>€2</td>
+                <td>£2</td>
             </tr>
             <tr>
                 <td>White wine spritz</td>
                 <td>1/2 pint</td>
-                <td>€2</td>
+                <td>£2</td>
             </tr>
             <tr>
-                <td>Radler (Beer + lemonade)</td>
+                <td>Radler<br><small>(Beer + lemonade)</small></td>
                 <td>1 pint</td>
-                <td>€2</td>
+                <td>£2</td>
             </tr>
             <tr>
-                <td>Hop soda (non-alc)</td>
+                <td>Hop soda<br><small>(non-alc)</small></td>
                 <td>1 pint</td>
-                <td>€2</td>
+                <td>£2</td>
             </tr>
             <tr>
-                <td>Club mate (non-alc + caffeinated)</td>
+                <td>Club mate<br><small>(non-alc + caffeinated)</small></td>
                 <td>1 pint</td>
-                <td>€2</td>
+                <td>£2</td>
             </tr>
         </table>
         <div id="result"></div>
@@ -140,7 +142,7 @@
 
         const DRINKS_API_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh';
         const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
-        const DRINK_COST = 2; // Cost per drink in euros
+        const DRINK_COST = 2; // Cost per drink in GBP
 
         const scanSound = new Audio('scan_sound.mp3');
         const uploadSound = new Audio('upload_sound.mp3');
@@ -154,6 +156,7 @@
             popup.className = `popup ${type}`;
             popup.textContent = message;
             document.body.appendChild(popup);
+            setTimeout(() => removePopup(popup), 3000); // Remove popup after 3 seconds
             return popup;
         }
 
@@ -201,9 +204,9 @@
                         const name = await getNameFromUid(uid);
                         const totalSpent = newCount * DRINK_COST;
                         if (name) {
-                            showPopup(`Cheers, ${name}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: €${totalSpent}`);
+                            showPopup(`Cheers, ${name}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: £${totalSpent}`);
                         } else {
-                            showPopup(`Cheers! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: €${totalSpent}`);
+                            showPopup(`Cheers! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: £${totalSpent}`);
                         }
                         return newCount;
                     } else {
@@ -223,9 +226,9 @@
                     if (addResponse.ok) {
                         const name = await getNameFromUid(uid);
                         if (name) {
-                            showPopup(`Welcome, ${name}! 🎉\nYou've just bought your first drink!\nTotal spent: €${DRINK_COST}`);
+                            showPopup(`Welcome, ${name}! 🎉\nYou've just bought your first drink!\nTotal spent: £${DRINK_COST}`);
                         } else {
-                            showPopup(`Welcome! 🎉\nYou've just bought your first drink!\nTotal spent: €${DRINK_COST}`);
+                            showPopup(`Welcome! 🎉\nYou've just bought your first drink!\nTotal spent: £${DRINK_COST}`);
                         }
                         return 1;
                     } else {
@@ -257,12 +260,12 @@
             const waitingPopup = showPopup("Please wait...");
             
             try {
-                scanSound.play().catch(e => console.log("Couldn't play scan sound:", e));
+                await scanSound.play();
                 
                 const totalDrinks = await incrementOrAddUid(uid);
                 
                 if (totalDrinks !== null) {
-                    uploadSound.play().catch(e => console.log("Couldn't play upload sound:", e));
+                    await uploadSound.play();
                 }
             } catch (error) {
                 showPopup(`Error: ${error.message}`, 'error');
@@ -275,7 +278,7 @@
             if ('NDEFReader' in window) {
                 try {
                     ndef = new NDEFReader();
-                    updateStatus('Ready to scan! Place your tag near the device.');
+                    updateStatus('Ready to scan! Place your tag on the back of the phone to buy a drink.');
                     
                     await ndef.scan();
                     
