@@ -390,7 +390,6 @@
         }
 
         async function startReading() {
-            const permissionStatus = await checkNfcPermission();
             if ('NDEFReader' in window) {
                 try {
                     ndef = new NDEFReader();
