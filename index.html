@@ -160,6 +160,8 @@
             </tr>
         </table>
         <div id="result"></div>
+
+        <button id="permission-button">Grant permission</button>
     </div>
 
     <script>
@@ -173,6 +175,24 @@
 
         const scanSound = new Audio('scan_sound.mp3');
         const uploadSound = new Audio('upload_sound.mp3');
+
+        const permissionButton = document.getElementById('permission-button');
+
+        permissionButton.addEventListener('click', async () => {
+        try {
+            const permissionStatus = await ndef.requestPermission();
+            if (permissionStatus === 'granted') {
+            // Permission granted, start scanning
+            updateStatus('Ready to scan!');
+            await startReading();
+            permissionButton.style.display = 'none';
+            } else {
+            showPopup('NFC permission denied. Please allow access to scan drinks.');
+            }
+        } catch (error) {
+            showPopup(`Error requesting NFC permission: ${error.message}`, 'error');
+        }
+        });
 
         function updateStatus(message) {
             statusElement.textContent = message;
