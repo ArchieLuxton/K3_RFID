@@ -60,7 +60,7 @@
         .drink-list li {
             margin-bottom: 10px;
         }
-        .success-popup {
+        .popup {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -73,6 +73,7 @@
             font-size: 24px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             animation: popIn 0.5s ease-out;
+            text-align: center;
         }
         @keyframes popIn {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
@@ -104,6 +105,7 @@
 
         const DRINKS_API_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh';
         const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
+        const DRINK_COST = 2; // Cost per drink in euros
 
         const scanSound = new Audio('scan_sound.mp3');
         const uploadSound = new Audio('upload_sound.mp3');
@@ -112,16 +114,16 @@
             statusElement.textContent = message;
         }
 
-        function showSuccess(message) {
-            const successPopup = document.createElement('div');
-            successPopup.className = 'success-popup';
-            successPopup.textContent = message;
-            document.body.appendChild(successPopup);
-            setTimeout(() => successPopup.remove(), 5000);
+        function showPopup(message, type = 'success') {
+            const popup = document.createElement('div');
+            popup.className = `popup ${type}`;
+            popup.textContent = message;
+            document.body.appendChild(popup);
+            return popup;
         }
 
-        function showError(message) {
-            showSuccess(message); // Using the same style for errors
+        function removePopup(popup) {
+            popup.remove();
         }
 
         async function getNameFromUid(uid) {
@@ -134,7 +136,7 @@
                 const entry = registrationData.find(entry => entry.uid === uid);
                 return entry ? entry.name : null;
             } catch (error) {
-                showError(`Error: ${error.message}`);
+                showPopup(`Error: ${error.message}`, 'error');
                 return null;
             }
         }
@@ -162,10 +164,11 @@
 
                     if (updateResponse.ok) {
                         const name = await getNameFromUid(uid);
+                        const totalSpent = newCount * DRINK_COST;
                         if (name) {
-                            showSuccess(`Cheers, ${name}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!`);
+                            showPopup(`Cheers, ${name}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: €${totalSpent}`);
                         } else {
-                            showSuccess(`Cheers! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!`);
+                            showPopup(`Cheers! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: €${totalSpent}`);
                         }
                         return newCount;
                     } else {
@@ -185,9 +188,9 @@
                     if (addResponse.ok) {
                         const name = await getNameFromUid(uid);
                         if (name) {
-                            showSuccess(`Welcome, ${name}! 🎉\nYou've just bought your first drink!`);
+                            showPopup(`Welcome, ${name}! 🎉\nYou've just bought your first drink!\nTotal spent: €${DRINK_COST}`);
                         } else {
-                            showSuccess(`Welcome! 🎉\nYou've just bought your first drink!`);
+                            showPopup(`Welcome! 🎉\nYou've just bought your first drink!\nTotal spent: €${DRINK_COST}`);
                         }
                         return 1;
                     } else {
@@ -195,7 +198,7 @@
                     }
                 }
             } catch (error) {
-                showError(`Error: ${error.message}`);
+                showPopup(`Error: ${error.message}`, 'error');
                 return null;
             }
         }
@@ -218,17 +221,21 @@
         async function handleNfcReading(uid) {
             try {
                 await scanSound.play();
-            } catch (error) {
-                showError(`Error playing scan sound: ${error.message}`);
-            }
-
-            const totalDrinks = await incrementOrAddUid(uid);
-            if (totalDrinks !== null) {
-                try {
-                    await uploadSound.play();
-                } catch (error) {
-                    showError(`Error playing upload sound: ${error.message}`);
+                const waitingPopup = showPopup("Please wait...");
+                
+                const totalDrinks = await incrementOrAddUid(uid);
+                
+                removePopup(waitingPopup);
+                
+                if (totalDrinks !== null) {
+                    try {
+                        await uploadSound.play();
+                    } catch (error) {
+                        showPopup(`Error playing upload sound: ${error.message}`, 'error');
+                    }
                 }
+            } catch (error) {
+                showPopup(`Error playing scan sound: ${error.message}`, 'error');
             }
         }
 
@@ -245,11 +252,11 @@
                     });
 
                 } catch (error) {
-                    showError(`Error starting NFC: ${error.message}`);
+                    showPopup(`Error starting NFC: ${error.message}`, 'error');
                     updateStatus(`Error: ${error.message}`);
                 }
             } else {
-                showError('NFC not supported on this device');
+                showPopup('NFC not supported on this device', 'error');
                 updateStatus('NFC not supported');
             }
         }
@@ -261,7 +268,7 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
-                .catch(err => showError(`ServiceWorker registration failed: ${err.message}`));
+                .catch(err => showPopup(`ServiceWorker registration failed: ${err.message}`, 'error'));
         }
     </script>
 </body>
