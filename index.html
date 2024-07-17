@@ -3,66 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RFID Tag Reader</title>
+    <title>NFC Tag Reader</title>
     <link rel="manifest" href="manifest.json">
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
         }
-        #log {
-            margin-top: 20px;
-            font-size: 18px;
+        #app {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>RFID Tag Reader</h1>
-    <div id="log">Waiting for NFC tag...</div>
+    <div id="app">
+        <h1>NFC Tag Reader</h1>
+        <p id="status">NFC Status: Not Reading</p>
+        <button id="readButton">Start Reading</button>
+        <p id="result">UUID: None</p>
+    </div>
 
     <script>
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then((registration) => {
-                console.log('Service Worker registered with scope:', registration.scope);
-            }).catch((error) => {
-                console.log('Service Worker registration failed:', error);
-            });
+        const statusElement = document.getElementById('status');
+        const resultElement = document.getElementById('result');
+        const readButton = document.getElementById('readButton');
+        let ndef;
+
+        function updateStatus(message) {
+            statusElement.textContent = `NFC Status: ${message}`;
         }
 
-        const logElement = document.getElementById('log');
+        function updateResult(uuid) {
+            resultElement.textContent = `UUID: ${uuid}`;
+        }
 
-        document.addEventListener('DOMContentLoaded', startNFCScanning);
-
-        function startNFCScanning() {
+        async function startReading() {
             if ('NDEFReader' in window) {
-                const ndefReader = new NDEFReader();
-                ndefReader.scan().then(() => {
-                    console.log("Scan started successfully");
-                    logElement.textContent = "Scan started successfully";
-                    ndefReader.onreading = event => {
-                        const decoder = new TextDecoder();
-                        for (const record of event.message.records) {
-                            if (record.recordType === "text") {
-                                const uuid = decoder.decode(record.data);
-                                logElement.textContent = `UUID: ${uuid}`;
-                            }
-                        }
-                    }
-                }).catch(error => {
-                    console.error("Error starting NFC scan:", error);
-                    logElement.textContent = `Error: ${error.message} (${error.name})`;
-                });
+                try {
+                    ndef = new NDEFReader();
+                    updateStatus('Started');
+                    
+                    await ndef.scan();
+                    
+                    ndef.addEventListener("reading", ({ serialNumber }) => {
+                        updateResult(serialNumber);
+                    });
+
+                    readButton.textContent = 'Stop Reading';
+                    readButton.onclick = stopReading;
+                } catch (error) {
+                    console.error(error);
+                    updateStatus(`Error: ${error}`);
+                }
             } else {
-                console.log("Web NFC is not supported in this browser");
-                logElement.textContent = "Error: NFC is not supported on this device or browser";
+                updateStatus('NFC not supported');
             }
         }
 
+        function stopReading() {
+            if (ndef) {
+                ndef.stop();
+                ndef = null;
+                updateStatus('Stopped');
+                readButton.textContent = 'Start Reading';
+                readButton.onclick = startReading;
+            }
+        }
 
-        // Start NFC scanning when the page loads
-        document.addEventListener('DOMContentLoaded', startNFCScanning);
+        readButton.onclick = startReading;
+
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
+                .catch(err => console.log('ServiceWorker registration failed: ', err));
+        }
     </script>
 </body>
 </html>
