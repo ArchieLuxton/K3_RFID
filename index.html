@@ -3,68 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NFC Tag Reader</title>
+    <title>K3 Drink Scanner</title>
     <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background-color: #1a1a1a;
+            color: #ffffff;
         }
         #app {
             text-align: center;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            max-width: 600px;
-            width: 100%;
+            background-color: #2a2a2a;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 90%;
         }
-        button {
-            background-color: #4CAF50;
-            border: none;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin: 4px 2px;
-            cursor: pointer;
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+        h2 {
+            font-family: 'Creepster', cursive;
+            font-size: 2em;
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #4ecdc4;
+        }
+        #status {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #f7fff7;
         }
         #result {
-            font-size: 18px;
-            margin-top: 20px;
+            font-size: 1.5em;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #4ecdc4;
+            color: #1a1a1a;
+            border-radius: 10px;
+            display: none;
         }
-        .error-popup {
+        .drink-list {
+            text-align: left;
+            margin: 20px auto;
+            max-width: 400px;
+        }
+        .drink-list li {
+            margin-bottom: 10px;
+        }
+        .success-popup {
             position: fixed;
-            top: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            background-color: #f44336;
+            transform: translate(-50%, -50%);
+            background-color: #ff6b6b;
             color: white;
-            padding: 15px;
-            border-radius: 5px;
+            padding: 30px;
+            border-radius: 15px;
             z-index: 1000;
+            font-size: 24px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            animation: popIn 0.5s ease-out;
+        }
+        @keyframes popIn {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         }
     </style>
 </head>
 <body>
     <div id="app">
-        <h1>NFC Tag Reader</h1>
-        <p id="status">NFC Status: Not Reading</p>
-        <button id="readButton">Start Reading</button>
-        <p id="result"></p>
+        <h1>Welcome to K3!</h1>
+        <h2>Work | Sin | Party</h2>
+        <p id="status">To buy a drink, please scan your tag.</p>
+        <p>Every drink is €2:</p>
+        <ul class="drink-list">
+            <li>Beer: 1 pint</li>
+            <li>Tinto de Verano (Red wine + lemonade): 1/2 pint</li>
+            <li>White wine spritz: 1/2 pint</li>
+            <li>Radler (Beer + lemonade): 1 pint</li>
+            <li>Hop soda (non-alc): 1 pint</li>
+            <li>Club mate (non-alc + caffeinated): 1 pint</li>
+        </ul>
+        <div id="result"></div>
     </div>
 
     <script>
         const statusElement = document.getElementById('status');
         const resultElement = document.getElementById('result');
-        const readButton = document.getElementById('readButton');
         let ndef;
 
         const DRINKS_API_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh';
@@ -74,15 +109,19 @@
         const uploadSound = new Audio('upload_sound.mp3');
 
         function updateStatus(message) {
-            statusElement.textContent = `NFC Status: ${message}`;
+            statusElement.textContent = message;
+        }
+
+        function showSuccess(message) {
+            const successPopup = document.createElement('div');
+            successPopup.className = 'success-popup';
+            successPopup.textContent = message;
+            document.body.appendChild(successPopup);
+            setTimeout(() => successPopup.remove(), 5000);
         }
 
         function showError(message) {
-            const errorPopup = document.createElement('div');
-            errorPopup.className = 'error-popup';
-            errorPopup.textContent = message;
-            document.body.appendChild(errorPopup);
-            setTimeout(() => errorPopup.remove(), 5000);
+            showSuccess(message); // Using the same style for errors
         }
 
         async function getNameFromUid(uid) {
@@ -124,9 +163,9 @@
                     if (updateResponse.ok) {
                         const name = await getNameFromUid(uid);
                         if (name) {
-                            resultElement.textContent = `Thanks ${name}! You have just bought 1 drink. Total drinks so far: ${newCount}`;
+                            showSuccess(`Cheers, ${name}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!`);
                         } else {
-                            resultElement.textContent = `UID ${uid} incremented successfully. You have just bought 1 drink. Total drinks: ${newCount}`;
+                            showSuccess(`Cheers! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!`);
                         }
                         return newCount;
                     } else {
@@ -146,9 +185,9 @@
                     if (addResponse.ok) {
                         const name = await getNameFromUid(uid);
                         if (name) {
-                            resultElement.textContent = `Thanks ${name}! You have just bought 1 drink.`;
+                            showSuccess(`Welcome, ${name}! 🎉\nYou've just bought your first drink!`);
                         } else {
-                            resultElement.textContent = `UID ${uid} added successfully. You have just bought 1 drink. Total drinks: 1`;
+                            showSuccess(`Welcome! 🎉\nYou've just bought your first drink!`);
                         }
                         return 1;
                     } else {
@@ -159,6 +198,21 @@
                 showError(`Error: ${error.message}`);
                 return null;
             }
+        }
+
+        function getOrdinalSuffix(number) {
+            const j = number % 10,
+                  k = number % 100;
+            if (j == 1 && k != 11) {
+                return "st";
+            }
+            if (j == 2 && k != 12) {
+                return "nd";
+            }
+            if (j == 3 && k != 13) {
+                return "rd";
+            }
+            return "th";
         }
 
         async function handleNfcReading(uid) {
@@ -182,7 +236,7 @@
             if ('NDEFReader' in window) {
                 try {
                     ndef = new NDEFReader();
-                    updateStatus('Started');
+                    updateStatus('Ready to scan! Place your tag near the device.');
                     
                     await ndef.scan();
                     
@@ -190,8 +244,6 @@
                         handleNfcReading(serialNumber);
                     });
 
-                    readButton.textContent = 'Stop Reading';
-                    readButton.onclick = stopReading;
                 } catch (error) {
                     showError(`Error starting NFC: ${error.message}`);
                     updateStatus(`Error: ${error.message}`);
@@ -202,17 +254,8 @@
             }
         }
 
-        function stopReading() {
-            if (ndef) {
-                ndef.stop();
-                ndef = null;
-                updateStatus('Stopped');
-                readButton.textContent = 'Start Reading';
-                readButton.onclick = startReading;
-            }
-        }
-
-        readButton.onclick = startReading;
+        // Start reading NFC tags automatically when the page loads
+        window.addEventListener('load', startReading);
 
         // Service Worker Registration for PWA
         if ('serviceWorker' in navigator) {
