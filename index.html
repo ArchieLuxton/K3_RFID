@@ -11,7 +11,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
         }
@@ -21,6 +21,8 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
         }
         button {
             background-color: #4CAF50;
@@ -34,6 +36,19 @@
             margin: 4px 2px;
             cursor: pointer;
         }
+        #log {
+            text-align: left;
+            margin-top: 20px;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+        }
+        #log h2 {
+            text-align: center;
+        }
+        #logEntries {
+            max-height: 300px;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
@@ -41,21 +56,44 @@
         <h1>NFC Tag Reader</h1>
         <p id="status">NFC Status: Not Reading</p>
         <button id="readButton">Start Reading</button>
-        <p id="result">UUID: None</p>
+        <p id="result">Last Scanned UUID: None</p>
+        <div id="log">
+            <h2>Scan Log</h2>
+            <div id="logEntries"></div>
+        </div>
     </div>
 
     <script>
         const statusElement = document.getElementById('status');
         const resultElement = document.getElementById('result');
         const readButton = document.getElementById('readButton');
+        const logEntriesElement = document.getElementById('logEntries');
         let ndef;
+        let scanLog = {};
 
         function updateStatus(message) {
             statusElement.textContent = `NFC Status: ${message}`;
         }
 
         function updateResult(uuid) {
-            resultElement.textContent = `UUID: ${uuid}`;
+            resultElement.textContent = `Last Scanned UUID: ${uuid}`;
+        }
+
+        function updateLog(uuid) {
+            if (scanLog[uuid]) {
+                scanLog[uuid]++;
+            } else {
+                scanLog[uuid] = 1;
+            }
+            displayLog();
+        }
+
+        function displayLog() {
+            let logHTML = '';
+            for (let uuid in scanLog) {
+                logHTML += `<p>UUID: ${uuid} - Scanned ${scanLog[uuid]} time(s)</p>`;
+            }
+            logEntriesElement.innerHTML = logHTML;
         }
 
         async function startReading() {
@@ -68,6 +106,7 @@
                     
                     ndef.addEventListener("reading", ({ serialNumber }) => {
                         updateResult(serialNumber);
+                        updateLog(serialNumber);
                     });
 
                     readButton.textContent = 'Stop Reading';
