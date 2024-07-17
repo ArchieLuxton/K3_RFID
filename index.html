@@ -232,11 +232,11 @@
             await checkNfcHardware();
             try {
                 console.log('starting reading');
-                permisionButton.style.display = 'none';
+                permissionButton.style.display = 'none';
                 await startReading();
             } catch (error) {
                 showPopup(`Error requesting NFC permission: ${error.message}`, 'error');
-                permisionButton.style.display = 'block';
+                permissionButton.style.display = 'block';
             }
         });
 
