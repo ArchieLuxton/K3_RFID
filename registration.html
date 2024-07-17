@@ -193,7 +193,8 @@
                 const option = document.createElement('option');
                 option.value = guest.name;
                 option.textContent = guest.name;
-                option.disabled = guest.registered;
+                // Check if registered is strictly equal to true or the string "TRUE"
+                option.disabled = guest.registered === true || guest.registered === "TRUE";
                 guestSelect.appendChild(option);
             });
         }
