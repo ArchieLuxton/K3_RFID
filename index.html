@@ -69,8 +69,8 @@
 
         const SHEETDB_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh'; // Your SheetDB URL
 
-        const scanSound = new Audio('https://cdn.freesound.org/previews/321/321906_5823992-lq.mp3');
-        const successSound = new Audio('https://cdn.freesound.org/previews/243/243020_4284968-lq.mp3');
+        const scanSound = new Audio('scan_sound.mp3');
+        const uploadSound = new Audio('upload_sound.mp3');
 
         function updateStatus(message) {
             statusElement.textContent = `NFC Status: ${message}`;
@@ -150,9 +150,9 @@
             if (totalDrinks !== null) {
                 resultElement.textContent = `Thanks ${uid}! You have bought a total of ${totalDrinks} drinks.`;
                 try {
-                    await successSound.play();
+                    await uploadSound.play();
                 } catch (error) {
-                    showError(`Error playing success sound: ${error.message}`);
+                    showError(`Error playing upload sound: ${error.message}`);
                 }
             } else {
                 resultElement.textContent = `Error processing UID ${uid}`;
