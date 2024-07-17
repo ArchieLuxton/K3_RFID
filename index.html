@@ -161,7 +161,7 @@
         </table>
         <div id="result"></div>
 
-        <button id="permission-button">Grant permission</button>
+        <button id="permission-button">Start scanning!</button>
     </div>
 
     <script>
@@ -182,6 +182,8 @@
 
         permissionButton.addEventListener('click', async () => {
             try {
+                console.log('starting reading');
+                permisionButton.style.display = 'none';
                 await startReading();
             } catch (error) {
                 showPopup(`Error requesting NFC permission: ${error.message}`, 'error');
