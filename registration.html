@@ -123,6 +123,26 @@
         #checkTagButton:hover {
             background-color: #45b7ac;
         }
+        .divider {
+            border-top: 1px solid #e0e0e0;
+            margin: 30px 0 20px;
+            position: relative;
+        }
+        .divider-text {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ffffff;
+            padding: 0 10px;
+            color: #888888;
+        }
+        #waitingForTag {
+            display: none;
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #4ecdc4;
+        }
     </style>
 </head>
 <body>
@@ -136,7 +156,13 @@
         </select>
         <p id="scanInstructions" style="display: none;">Now scan the guest's RFID tag.</p>
         <div id="result"></div>
+        
+        <div class="divider">
+            <span class="divider-text">OR</span>
+        </div>
+        
         <button id="checkTagButton">Check Tag</button>
+        <p id="waitingForTag">Waiting for tag...</p>
     </div>
 
     <script>
@@ -145,6 +171,7 @@
         const guestSelect = document.getElementById('guestSelect');
         const scanInstructions = document.getElementById('scanInstructions');
         const checkTagButton = document.getElementById('checkTagButton');
+        const waitingForTag = document.getElementById('waitingForTag');
         let ndef;
         let checkingTag = false;
 
@@ -180,11 +207,15 @@
             const removePopupOnClick = () => {
                 popup.remove();
                 document.removeEventListener('click', removePopupOnClick);
+                waitingForTag.style.display = 'none';
             };
             
             document.addEventListener('click', removePopupOnClick);
             
-            setTimeout(() => popup.remove(), 5000);
+            setTimeout(() => {
+                popup.remove();
+                waitingForTag.style.display = 'none';
+            }, 5000);
         }
 
         async function fetchGuestList() {
@@ -334,6 +365,7 @@
         checkTagButton.addEventListener('click', () => {
             checkingTag = true;
             updateStatus('Scan a tag to check its registration.');
+            waitingForTag.style.display = 'block';
         });
 
         // Initialize the page
