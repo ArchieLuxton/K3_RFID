@@ -7,7 +7,6 @@
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Keeping the same styles as in index.html */
         body {
             font-family: 'Roboto', sans-serif;
             display: flex;
@@ -101,7 +100,6 @@
             padding-top: 10px;
             margin-top: 15px;
         }
-        /* New styles for registration page */
         #guestSelect {
             font-size: 1.2em;
             padding: 10px;
@@ -134,7 +132,6 @@
         const scanInstructions = document.getElementById('scanInstructions');
         let ndef;
 
-        // Replace these with your actual API endpoints
         const GUESTLIST_API_URL = 'https://sheetdb.io/api/v1/hmrvpjmef5not';
         const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
 
@@ -193,7 +190,6 @@
                 const option = document.createElement('option');
                 option.value = guest.name;
                 option.textContent = guest.name;
-                // Check if registered is strictly equal to true or the string "TRUE"
                 option.disabled = guest.registered === true || guest.registered === "TRUE";
                 guestSelect.appendChild(option);
             });
@@ -211,7 +207,28 @@
 
         async function registerGuest(name, uid) {
             try {
-                const response = await fetch(REGISTRATION_API_URL, {
+                // Check if UID is already associated with a person
+                const registrationResponse = await fetch(`${REGISTRATION_API_URL}/search?uid=${uid}`);
+                if (!registrationResponse.ok) {
+                    throw new Error("Error checking registration");
+                }
+                const registrationData = await registrationResponse.json();
+                if (registrationData.length > 0) {
+                    throw new Error("This RFID tag is already associated with a guest");
+                }
+
+                // Check if person already has a UID associated
+                const personRegistrationResponse = await fetch(`${REGISTRATION_API_URL}/search?name=${name}`);
+                if (!personRegistrationResponse.ok) {
+                    throw new Error("Error checking person registration");
+                }
+                const personRegistrationData = await personRegistrationResponse.json();
+                if (personRegistrationData.length > 0) {
+                    throw new Error("This guest is already registered with an RFID tag");
+                }
+
+                // Register the guest
+                const registerResponse = await fetch(REGISTRATION_API_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -219,8 +236,21 @@
                     body: JSON.stringify({ name, uid }),
                 });
 
-                if (!response.ok) {
+                if (!registerResponse.ok) {
                     throw new Error("Error registering guest");
+                }
+
+                // Update guestlist sheet
+                const updateGuestlistResponse = await fetch(`${GUESTLIST_API_URL}/name/${name}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ registered: "TRUE" }),
+                });
+
+                if (!updateGuestlistResponse.ok) {
+                    throw new Error("Error updating guestlist");
                 }
 
                 showPopup(`Successfully registered ${name} with UID: ${uid}`);
