@@ -154,9 +154,9 @@
         function showPopup(message, type = 'success') {
             const popup = document.createElement('div');
             popup.className = `popup ${type}`;
-            popup.textContent = message;
+            popup.innerHTML = message.replace(/\n/g, '<br>');
             document.body.appendChild(popup);
-            setTimeout(() => removePopup(popup), 3000); // Remove popup after 3 seconds
+            setTimeout(() => removePopup(popup), 5000); // Remove popup after 5 seconds
             return popup;
         }
 
@@ -188,6 +188,12 @@
                 const data = await response.json();
 
                 const existingEntry = data.find(entry => entry.uid === uid);
+                const name = await getNameFromUid(uid);
+
+                let message = '';
+                if (!name) {
+                    message += "You haven't registered your token!! Please find a bar worker to get this done so we know who you are!\n\n";
+                }
 
                 if (existingEntry) {
                     const newCount = parseInt(existingEntry.num_drinks) + 1;
@@ -201,13 +207,9 @@
                     });
 
                     if (updateResponse.ok) {
-                        const name = await getNameFromUid(uid);
                         const totalSpent = newCount * DRINK_COST;
-                        if (name) {
-                            showPopup(`Cheers, ${name}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: £${totalSpent}`);
-                        } else {
-                            showPopup(`Cheers! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: £${totalSpent}`);
-                        }
+                        message += `Cheers${name ? ', ' + name : ''}! 🍻\nYou've just bought your ${newCount}${getOrdinalSuffix(newCount)} drink!\nTotal spent: £${totalSpent}`;
+                        showPopup(message);
                         return newCount;
                     } else {
                         throw new Error(`Error updating UID ${uid}`);
@@ -224,12 +226,8 @@
                     });
 
                     if (addResponse.ok) {
-                        const name = await getNameFromUid(uid);
-                        if (name) {
-                            showPopup(`Welcome, ${name}! 🎉\nYou've just bought your first drink!\nTotal spent: £${DRINK_COST}`);
-                        } else {
-                            showPopup(`Welcome! 🎉\nYou've just bought your first drink!\nTotal spent: £${DRINK_COST}`);
-                        }
+                        message += `Welcome${name ? ', ' + name : ''}! 🎉\nYou've just bought your first drink!\nTotal spent: £${DRINK_COST}`;
+                        showPopup(message);
                         return 1;
                     } else {
                         throw new Error(`Error adding UID ${uid}`);
