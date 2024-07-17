@@ -33,11 +33,14 @@
 
         const logElement = document.getElementById('log');
 
+        document.addEventListener('DOMContentLoaded', startNFCScanning);
+
         function startNFCScanning() {
             if ('NDEFReader' in window) {
                 const ndefReader = new NDEFReader();
                 ndefReader.scan().then(() => {
                     console.log("Scan started successfully");
+                    logElement.textContent = "Scan started successfully";
                     ndefReader.onreading = event => {
                         const decoder = new TextDecoder();
                         for (const record of event.message.records) {
@@ -48,14 +51,15 @@
                         }
                     }
                 }).catch(error => {
-                    console.log("Error starting NFC scan:", error);
-                    logElement.textContent = "Error: Unable to start NFC scanning";
+                    console.error("Error starting NFC scan:", error);
+                    logElement.textContent = `Error: ${error.message} (${error.name})`;
                 });
             } else {
                 console.log("Web NFC is not supported in this browser");
                 logElement.textContent = "Error: NFC is not supported on this device or browser";
             }
         }
+
 
         // Start NFC scanning when the page loads
         document.addEventListener('DOMContentLoaded', startNFCScanning);
