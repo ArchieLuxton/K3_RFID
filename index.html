@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFID Tag Reader</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        /* Your existing styles here */
+    </style>
+</head>
+<body>
+    <h1>RFID Tag Reader</h1>
+    <button id="scanButton">Scan RFID Tag</button>
+    <div id="log"></div>
+
+    <script>
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then((registration) => {
+                console.log('Service Worker registered with scope:', registration.scope);
+            }).catch((error) => {
+                console.log('Service Worker registration failed:', error);
+            });
+        }
+
+        const tagCounts = {};
+        const logElement = document.getElementById('log');
+        const scanButton = document.getElementById('scanButton');
+
+        function scanTag() {
+            if ('nfc' in navigator) {
+                navigator.nfc.watch((message) => {
+                    const uuid = message.records[0].data;
+                    if (uuid in tagCounts) {
+                        tagCounts[uuid]++;
+                    } else {
+                        tagCounts[uuid] = 1;
+                    }
+                    updateLog();
+                }, { mode: 'any' }).catch((error) => {
+                    console.error("Error watching for NFC tags:", error);
+                });
+            } else {
+                alert("NFC is not supported on this device or browser.");
+            }
+        }
+
+        function updateLog() {
+            logElement.innerHTML = '';
+            for (const [uuid, count] of Object.entries(tagCounts)) {
+                const logItem = document.createElement('p');
+                logItem.textContent = `UUID: ${uuid} - Count: ${count}`;
+                logElement.appendChild(logItem);
+            }
+        }
+
+        scanButton.addEventListener('click', scanTag);
+    </script>
+</body>
+</html>
