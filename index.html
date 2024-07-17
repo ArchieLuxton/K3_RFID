@@ -183,9 +183,10 @@
             const permissionStatus = await ndef.requestPermission();
             if (permissionStatus === 'granted') {
             // Permission granted, start scanning
+            console.log('permission granted yooo')
             updateStatus('Ready to scan!');
-            await startReading();
             permissionButton.style.display = 'none';
+            await startReading();
             } else {
             showPopup('NFC permission denied. Please allow access to scan drinks.');
             }
