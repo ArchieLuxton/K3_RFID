@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K3 Guest Registration</title>
+    <link rel="manifest" href="manifest.json">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Keeping the same styles as in index.html */
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            color: #333333;
+        }
+        #app {
+            text-align: center;
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #333333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #4ecdc4;
+        }
+        #status {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            color: #333333;
+        }
+        #result {
+            font-size: 1.5em;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #4ecdc4;
+            color: #ffffff;
+            border-radius: 10px;
+            display: none;
+        }
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #ffffff;
+            color: #333333;
+            padding: 25px 30px;
+            border-radius: 12px;
+            z-index: 1000;
+            font-size: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: popIn 0.3s ease-out;
+            text-align: center;
+            width: 80%;
+            max-width: 400px;
+            border-top: 5px solid #4ecdc4;
+        }
+        .popup.error {
+            border-top-color: #ff6b6b;
+        }
+        @keyframes popIn {
+            0% { transform: translate(-50%, -60%) scale(0.9); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+        .popup-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #4ecdc4;
+        }
+        .popup.error .popup-title {
+            color: #ff6b6b;
+        }
+        .popup-content {
+            font-size: 16px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        .popup-footer {
+            font-size: 14px;
+            color: #888888;
+            border-top: 1px solid #e0e0e0;
+            padding-top: 10px;
+            margin-top: 15px;
+        }
+        /* New styles for registration page */
+        #guestSelect {
+            font-size: 1.2em;
+            padding: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+        #guestSelect option:disabled {
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>K3 Guest Registration</h1>
+        <h2>Work | Sin | Party</h2>
+        <p id="status">Select a guest and scan their RFID tag to register.</p>
+        <select id="guestSelect">
+            <option value="">Select a guest</option>
+            <!-- Options will be populated dynamically -->
+        </select>
+        <p id="scanInstructions" style="display: none;">Now scan the guest's RFID tag.</p>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const statusElement = document.getElementById('status');
+        const resultElement = document.getElementById('result');
+        const guestSelect = document.getElementById('guestSelect');
+        const scanInstructions = document.getElementById('scanInstructions');
+        let ndef;
+
+        // Replace these with your actual API endpoints
+        const GUESTLIST_API_URL = 'https://sheetdb.io/api/v1/hmrvpjmef5not';
+        const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
+
+        function updateStatus(message) {
+            statusElement.textContent = message;
+        }
+
+        function showPopup(message, type = 'success') {
+            const popup = document.createElement('div');
+            popup.className = `popup ${type}`;
+            
+            const title = document.createElement('div');
+            title.className = 'popup-title';
+            title.textContent = type === 'success' ? 'Success!' : 'Oops!';
+            
+            const content = document.createElement('div');
+            content.className = 'popup-content';
+            content.textContent = message;
+            
+            const footer = document.createElement('div');
+            footer.className = 'popup-footer';
+            footer.textContent = 'Tap anywhere to dismiss';
+            
+            popup.appendChild(title);
+            popup.appendChild(content);
+            popup.appendChild(footer);
+            
+            document.body.appendChild(popup);
+            
+            const removePopupOnClick = () => {
+                popup.remove();
+                document.removeEventListener('click', removePopupOnClick);
+            };
+            
+            document.addEventListener('click', removePopupOnClick);
+            
+            setTimeout(() => popup.remove(), 5000);
+        }
+
+        async function fetchGuestList() {
+            try {
+                const response = await fetch(GUESTLIST_API_URL);
+                if (!response.ok) {
+                    throw new Error("Error fetching guest list");
+                }
+                const guests = await response.json();
+                populateGuestSelect(guests);
+            } catch (error) {
+                showPopup(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function populateGuestSelect(guests) {
+            guestSelect.innerHTML = '<option value="">Select a guest</option>';
+            guests.forEach(guest => {
+                const option = document.createElement('option');
+                option.value = guest.name;
+                option.textContent = guest.name;
+                option.disabled = guest.registered;
+                guestSelect.appendChild(option);
+            });
+        }
+
+        guestSelect.addEventListener('change', () => {
+            if (guestSelect.value) {
+                scanInstructions.style.display = 'block';
+                updateStatus(`Selected ${guestSelect.value}. Please scan their RFID tag.`);
+            } else {
+                scanInstructions.style.display = 'none';
+                updateStatus('Select a guest and scan their RFID tag to register.');
+            }
+        });
+
+        async function registerGuest(name, uid) {
+            try {
+                const response = await fetch(REGISTRATION_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name, uid }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error registering guest");
+                }
+
+                showPopup(`Successfully registered ${name} with UID: ${uid}`);
+                guestSelect.value = '';
+                scanInstructions.style.display = 'none';
+                updateStatus('Select a guest and scan their RFID tag to register.');
+                await fetchGuestList(); // Refresh the guest list
+            } catch (error) {
+                showPopup(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function handleNfcReading(serialNumber) {
+            const selectedGuest = guestSelect.value;
+            if (selectedGuest) {
+                await registerGuest(selectedGuest, serialNumber);
+            } else {
+                showPopup('Please select a guest before scanning the RFID tag', 'error');
+            }
+        }
+
+        async function startNfcScanning() {
+            if ('NDEFReader' in window) {
+                try {
+                    ndef = new NDEFReader();
+                    await ndef.scan();
+                    
+                    ndef.addEventListener("reading", ({ serialNumber }) => {
+                        handleNfcReading(serialNumber);
+                    });
+
+                } catch (error) {
+                    showPopup(`Error starting NFC: ${error.message}`, 'error');
+                    updateStatus(`Error: ${error.message}`);
+                }
+            } else {
+                showPopup('NFC not supported on this device', 'error');
+                updateStatus('NFC not supported');
+            }
+        }
+
+        // Initialize the page
+        window.addEventListener('load', () => {
+            fetchGuestList();
+            startNfcScanning();
+        });
+    </script>
+</body>
+</html>
