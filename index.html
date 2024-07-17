@@ -40,6 +40,17 @@
             font-size: 18px;
             margin-top: 20px;
         }
+        .error-popup {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -59,9 +70,18 @@
         const SHEETDB_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh'; // Your SheetDB URL
 
         const scanSound = new Audio('https://cdn.freesound.org/previews/321/321906_5823992-lq.mp3');
+        const successSound = new Audio('https://cdn.freesound.org/previews/243/243020_4284968-lq.mp3');
 
         function updateStatus(message) {
             statusElement.textContent = `NFC Status: ${message}`;
+        }
+
+        function showError(message) {
+            const errorPopup = document.createElement('div');
+            errorPopup.className = 'error-popup';
+            errorPopup.textContent = message;
+            document.body.appendChild(errorPopup);
+            setTimeout(() => errorPopup.remove(), 5000);
         }
 
         async function incrementOrAddUid(uid) {
@@ -114,16 +134,26 @@
                     }
                 }
             } catch (error) {
-                console.error('Error:', error);
+                showError(`Error: ${error.message}`);
                 return null;
             }
         }
 
         async function handleNfcReading(uid) {
-            await scanSound.play();
+            try {
+                await scanSound.play();
+            } catch (error) {
+                showError(`Error playing scan sound: ${error.message}`);
+            }
+
             const totalDrinks = await incrementOrAddUid(uid);
             if (totalDrinks !== null) {
                 resultElement.textContent = `Thanks ${uid}! You have bought a total of ${totalDrinks} drinks.`;
+                try {
+                    await successSound.play();
+                } catch (error) {
+                    showError(`Error playing success sound: ${error.message}`);
+                }
             } else {
                 resultElement.textContent = `Error processing UID ${uid}`;
             }
@@ -144,10 +174,11 @@
                     readButton.textContent = 'Stop Reading';
                     readButton.onclick = stopReading;
                 } catch (error) {
-                    console.error(error);
-                    updateStatus(`Error: ${error}`);
+                    showError(`Error starting NFC: ${error.message}`);
+                    updateStatus(`Error: ${error.message}`);
                 }
             } else {
+                showError('NFC not supported on this device');
                 updateStatus('NFC not supported');
             }
         }
@@ -168,7 +199,7 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js')
                 .then(registration => console.log('ServiceWorker registration successful with scope: ', registration.scope))
-                .catch(err => console.log('ServiceWorker registration failed: ', err));
+                .catch(err => showError(`ServiceWorker registration failed: ${err.message}`));
         }
     </script>
 </body>
