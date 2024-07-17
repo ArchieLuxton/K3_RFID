@@ -36,18 +36,9 @@
             margin: 4px 2px;
             cursor: pointer;
         }
-        #log {
-            text-align: left;
+        #result {
+            font-size: 18px;
             margin-top: 20px;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-        }
-        #log h2 {
-            text-align: center;
-        }
-        #logEntries {
-            max-height: 300px;
-            overflow-y: auto;
         }
     </style>
 </head>
@@ -56,44 +47,86 @@
         <h1>NFC Tag Reader</h1>
         <p id="status">NFC Status: Not Reading</p>
         <button id="readButton">Start Reading</button>
-        <p id="result">Last Scanned UUID: None</p>
-        <div id="log">
-            <h2>Scan Log</h2>
-            <div id="logEntries"></div>
-        </div>
+        <p id="result"></p>
     </div>
 
     <script>
         const statusElement = document.getElementById('status');
         const resultElement = document.getElementById('result');
         const readButton = document.getElementById('readButton');
-        const logEntriesElement = document.getElementById('logEntries');
         let ndef;
-        let scanLog = {};
+
+        const SHEETDB_URL = 'https://sheetdb.io/api/v1/51yvtuyojo7nh'; // Your SheetDB URL
+
+        const scanSound = new Audio('https://cdn.freesound.org/previews/321/321906_5823992-lq.mp3');
 
         function updateStatus(message) {
             statusElement.textContent = `NFC Status: ${message}`;
         }
 
-        function updateResult(uuid) {
-            resultElement.textContent = `Last Scanned UUID: ${uuid}`;
+        async function incrementOrAddUid(uid) {
+            try {
+                // Fetch existing data
+                const response = await fetch(SHEETDB_URL);
+                if (!response.ok) {
+                    throw new Error('Error fetching data from SheetDB');
+                }
+                const data = await response.json();
+
+                // Check if UID exists
+                const existingEntry = data.find(entry => entry.uid === uid);
+
+                if (existingEntry) {
+                    // Increment existing UID
+                    const newCount = parseInt(existingEntry.num_drinks) + 1;
+                    const updateResponse = await fetch(`${SHEETDB_URL}/uid/${uid}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data: { num_drinks: newCount } })
+                    });
+
+                    if (updateResponse.ok) {
+                        console.log(`UID ${uid} incremented successfully`);
+                        return newCount;
+                    } else {
+                        throw new Error(`Error updating UID ${uid}`);
+                    }
+                } else {
+                    // Add new UID
+                    const newEntry = { uid: uid, num_drinks: 1 };
+                    const addResponse = await fetch(SHEETDB_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ data: newEntry })
+                    });
+
+                    if (addResponse.ok) {
+                        console.log(`UID ${uid} added successfully`);
+                        return 1;
+                    } else {
+                        throw new Error(`Error adding UID ${uid}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                return null;
+            }
         }
 
-        function updateLog(uuid) {
-            if (scanLog[uuid]) {
-                scanLog[uuid]++;
+        async function handleNfcReading(uid) {
+            await scanSound.play();
+            const totalDrinks = await incrementOrAddUid(uid);
+            if (totalDrinks !== null) {
+                resultElement.textContent = `Thanks ${uid}! You have bought a total of ${totalDrinks} drinks.`;
             } else {
-                scanLog[uuid] = 1;
+                resultElement.textContent = `Error processing UID ${uid}`;
             }
-            displayLog();
-        }
-
-        function displayLog() {
-            let logHTML = '';
-            for (let uuid in scanLog) {
-                logHTML += `<p>UUID: ${uuid} - Scanned ${scanLog[uuid]} time(s)</p>`;
-            }
-            logEntriesElement.innerHTML = logHTML;
         }
 
         async function startReading() {
@@ -105,8 +138,7 @@
                     await ndef.scan();
                     
                     ndef.addEventListener("reading", ({ serialNumber }) => {
-                        updateResult(serialNumber);
-                        updateLog(serialNumber);
+                        handleNfcReading(serialNumber);
                     });
 
                     readButton.textContent = 'Stop Reading';
