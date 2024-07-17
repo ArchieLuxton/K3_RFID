@@ -178,22 +178,14 @@
 
         const permissionButton = document.getElementById('permission-button');
 
-        updateStatus('You need to grant permissions by clicking the permissions button at the bottom of the page')
+        updateStatus('You need to click to start reading!')
 
         permissionButton.addEventListener('click', async () => {
-        try {
-            const permissionStatus = await ndef.requestPermission();
-            if (permissionStatus === 'granted') {
-            // Permission granted, start scanning
-            console.log('permission granted yooo')
-            permissionButton.style.display = 'none';
-            await startReading();
-            } else {
-            showPopup('NFC permission denied. Please allow access to scan drinks.');
+            try {
+                await startReading();
+            } catch (error) {
+                showPopup(`Error requesting NFC permission: ${error.message}`, 'error');
             }
-        } catch (error) {
-            showPopup(`Error requesting NFC permission: ${error.message}`, 'error');
-        }
         });
 
         function updateStatus(message) {
