@@ -110,6 +110,19 @@
         #guestSelect option:disabled {
             color: #999;
         }
+        #checkTagButton {
+            font-size: 1.2em;
+            padding: 10px 20px;
+            margin-top: 20px;
+            background-color: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #checkTagButton:hover {
+            background-color: #45b7ac;
+        }
     </style>
 </head>
 <body>
@@ -123,6 +136,7 @@
         </select>
         <p id="scanInstructions" style="display: none;">Now scan the guest's RFID tag.</p>
         <div id="result"></div>
+        <button id="checkTagButton">Check Tag</button>
     </div>
 
     <script>
@@ -130,7 +144,9 @@
         const resultElement = document.getElementById('result');
         const guestSelect = document.getElementById('guestSelect');
         const scanInstructions = document.getElementById('scanInstructions');
+        const checkTagButton = document.getElementById('checkTagButton');
         let ndef;
+        let checkingTag = false;
 
         const GUESTLIST_API_URL = 'https://sheetdb.io/api/v1/hmrvpjmef5not';
         const REGISTRATION_API_URL = 'https://sheetdb.io/api/v1/lbl3bv5dm0ein';
@@ -214,7 +230,7 @@
                 }
                 const registrationData = await registrationResponse.json();
                 if (registrationData.length > 0) {
-                    throw new Error("This RFID tag is already associated with a guest");
+                    throw new Error(`This RFID tag is already associated with guest: ${registrationData[0].name}`);
                 }
 
                 // Check if person already has a UID associated
@@ -263,12 +279,35 @@
             }
         }
 
+        async function checkTag(uid) {
+            try {
+                const response = await fetch(`${REGISTRATION_API_URL}/search?uid=${uid}`);
+                if (!response.ok) {
+                    throw new Error("Error checking tag");
+                }
+                const data = await response.json();
+                if (data.length > 0) {
+                    showPopup(`This tag belongs to: ${data[0].name}`);
+                } else {
+                    showPopup("This tag is not registered to any guest", "error");
+                }
+            } catch (error) {
+                showPopup(`Error: ${error.message}`, 'error');
+            }
+        }
+
         async function handleNfcReading(serialNumber) {
-            const selectedGuest = guestSelect.value;
-            if (selectedGuest) {
-                await registerGuest(selectedGuest, serialNumber);
+            if (checkingTag) {
+                await checkTag(serialNumber);
+                checkingTag = false;
+                updateStatus('Select a guest and scan their RFID tag to register.');
             } else {
-                showPopup('Please select a guest before scanning the RFID tag', 'error');
+                const selectedGuest = guestSelect.value;
+                if (selectedGuest) {
+                    await registerGuest(selectedGuest, serialNumber);
+                } else {
+                    showPopup('Please select a guest before scanning the RFID tag', 'error');
+                }
             }
         }
 
@@ -291,6 +330,11 @@
                 updateStatus('NFC not supported');
             }
         }
+
+        checkTagButton.addEventListener('click', () => {
+            checkingTag = true;
+            updateStatus('Scan a tag to check its registration.');
+        });
 
         // Initialize the page
         window.addEventListener('load', () => {
