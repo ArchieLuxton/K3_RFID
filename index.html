@@ -178,13 +178,14 @@
 
         const permissionButton = document.getElementById('permission-button');
 
+        updateStatus('You need to grant permissions by clicking the permissions button at the bottom of the page')
+
         permissionButton.addEventListener('click', async () => {
         try {
             const permissionStatus = await ndef.requestPermission();
             if (permissionStatus === 'granted') {
             // Permission granted, start scanning
             console.log('permission granted yooo')
-            updateStatus('Ready to scan!');
             permissionButton.style.display = 'none';
             await startReading();
             } else {
@@ -366,8 +367,8 @@
             }
         }
 
-        // Start reading NFC tags automatically when the page loads
-        window.addEventListener('load', startReading);
+        // // Start reading NFC tags automatically when the page loads
+        // window.addEventListener('load', startReading);
 
         // Service Worker Registration for PWA
         if ('serviceWorker' in navigator) {
