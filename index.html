@@ -178,7 +178,7 @@
 
         const permissionButton = document.getElementById('permission-button');
 
-        updateStatus('You need to click to start reading!')
+        updateStatus('You need to click to start reading!');
 
         permissionButton.addEventListener('click', async () => {
             try {
@@ -187,6 +187,7 @@
                 await startReading();
             } catch (error) {
                 showPopup(`Error requesting NFC permission: ${error.message}`, 'error');
+                permisionButton.style.display = 'block';
             }
         });
 
