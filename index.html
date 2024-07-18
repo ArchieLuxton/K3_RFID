@@ -125,18 +125,6 @@
             cursor: pointer;
             position: relative; /* Needed for pseudo-element */
         }
-
-        .permission-button::after {
-            content: "";
-            position: absolute;
-            top: -2px; /* Position the glow slightly above */
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            border-radius: inherit;
-            background: linear-gradient(to right, #f0f 0%, #0ff 50%, #f0f 100%);
-            animation: neon 1s ease-in-out infinite alternate; /* Animate the glow */
-        }
     </style>
 </head>
 <body>
@@ -145,7 +133,7 @@
         <h2>Work | Sin | Party</h2>
         <p id="status">Ready to scan! Place your tag on the back of the phone to buy a drink.</p>
         
-        <button id="permission-button">Start scanning!</button>
+        <button class="permission-button">Start scanning!</button>
         
         <p>Every drink is £2:</p>
         <table class="drink-table">
