@@ -19,7 +19,7 @@
         }
         #app {
             text-align: center;
-            background-color: #ffffff;
+            background-color: #dbff00;
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
@@ -63,7 +63,7 @@
         .drink-table th, .drink-table td {
             padding: 10px;
             text-align: left;
-            border-bottom: 1px solid #4ecdc4;
+            border-bottom: 1px solid #000000;
         }
         .drink-table th:last-child, .drink-table td:last-child {
             text-align: right;
@@ -190,7 +190,7 @@
 
         const permissionButton = document.getElementById('permission-button');
 
-        updateStatus('You need to click to start reading!');
+        updateStatus('');
 
         async function checkNfcHardware() {
             if ('NDEFReader' in window) {
