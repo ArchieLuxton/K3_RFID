@@ -114,7 +114,7 @@
             padding-top: 10px;
             margin-top: 15px;
         }
-        .scan-button {
+        .permission-button {
             background-color: #222;
             border: none;
             color: white;
@@ -126,7 +126,7 @@
             position: relative; /* Needed for pseudo-element */
         }
 
-        .scan-button::after {
+        .permission-button::after {
             content: "";
             position: absolute;
             top: -2px; /* Position the glow slightly above */
@@ -144,6 +144,9 @@
         <h1>Welcome to K3!</h1>
         <h2>Work | Sin | Party</h2>
         <p id="status">Ready to scan! Place your tag on the back of the phone to buy a drink.</p>
+        
+        <button id="permission-button">Start scanning!</button>
+        
         <p>Every drink is £2:</p>
         <table class="drink-table">
             <tr>
@@ -183,8 +186,6 @@
             </tr>
         </table>
         <div id="result"></div>
-
-        <button id="permission-button">Start scanning!</button>
     </div>
 
     <script>
